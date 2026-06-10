@@ -27,6 +27,44 @@ COLOR_COLUMNS = {
     "Team": "team",
 }
 
+# Fixed colors for handedness so R/L stay consistent every run.
+HAND_COLORS = {"R": "#1f77b4", "L": "#ff7f0e"}
+
+# Best-effort MLB team primary colors, keyed by Statcast's team codes.
+TEAM_COLORS = {
+    "AZ": "#A71930", "ATL": "#CE1141", "BAL": "#DF4601", "BOS": "#BD3039",
+    "CHC": "#0E3386", "CWS": "#27251F", "CIN": "#C6011F", "CLE": "#0C2340",
+    "COL": "#333366", "DET": "#0C2340", "HOU": "#EB6E1F", "KC": "#004687",
+    "LAA": "#BA0021", "LAD": "#005A9C", "MIA": "#00A3E0", "MIL": "#12284B",
+    "MIN": "#002B5C", "NYM": "#FF5910", "NYY": "#003087", "OAK": "#003831",
+    "ATH": "#003831", "PHI": "#E81828", "PIT": "#FDB827", "SD": "#2F241D",
+    "SF": "#FD5A1E", "SEA": "#0C2C56", "STL": "#C41E3A", "TB": "#092C5C",
+    "TEX": "#003278", "TOR": "#134A8E", "WSH": "#AB0003",
+}
+
+
+def _color_map(df: pd.DataFrame, color_mode: str):
+    """Return a {value: color} map for the chosen color column (or None)."""
+    if color_mode == "Handedness":
+        return HAND_COLORS
+    if color_mode == "Team":
+        # Real team color where known; distinct fallbacks for anything missing
+        # (e.g. a relocated team whose code we don't have yet).
+        pool = iter(px.colors.qualitative.Dark24 + px.colors.qualitative.Light24)
+        used = set(TEAM_COLORS.values())
+        out = {}
+        for team in sorted(df["team"].dropna().unique()):
+            if team in TEAM_COLORS:
+                out[team] = TEAM_COLORS[team]
+            else:
+                c = next(pool)
+                while c in used:
+                    c = next(pool)
+                used.add(c)
+                out[team] = c
+        return out
+    return None
+
 
 def build_figure(df: pd.DataFrame, color_mode: str = "None"):
     """Return an interactive 3D scatter: one marker per pitcher.
@@ -39,20 +77,34 @@ def build_figure(df: pd.DataFrame, color_mode: str = "None"):
         x=X_COL,
         y=Y_COL,
         z=Z_COL,
-        color=color_col,            # None -> single color; else color by this column
-        hover_name="player_name",   # bold title shown when you hover a dot
+        color=color_col,
+        color_discrete_map=_color_map(df, color_mode),
+        custom_data=["player_name", "team", "p_throws", "n",
+                     "release_pos_x", "release_pos_z", "release_extension"],
     )
-    # Make the dots a readable size and slightly see-through (so clusters show depth).
-    fig.update_traces(marker=dict(size=4, opacity=0.8))
-    # Label the three axes and trim empty whitespace around the scene.
+    # One rich tooltip per dot, with labels + units.
+    fig.update_traces(
+        marker=dict(size=4, opacity=0.85),
+        hovertemplate=(
+            "<b>%{customdata[0]}</b><br>"
+            "%{customdata[1]} · throws %{customdata[2]}<br>"
+            "Pitches: %{customdata[3]:,}<br>"
+            "Horizontal: %{customdata[4]:.2f} ft<br>"
+            "Height: %{customdata[5]:.2f} ft<br>"
+            "Extension: %{customdata[6]:.2f} ft"
+            "<extra></extra>"
+        ),
+    )
     fig.update_layout(
-        title="Average release point by pitcher",
+        height=700,                      # tall enough to use comfortably, incl. phones
+        autosize=True,                   # let it flex to the container width
         scene=dict(
             xaxis_title=X_TITLE,
             yaxis_title=Y_TITLE,
             zaxis_title=Z_TITLE,
         ),
-        margin=dict(l=0, r=0, t=40, b=0),
+        legend=dict(title=(color_mode if color_col else None)),
+        margin=dict(l=0, r=0, t=0, b=0),  # no in-figure title; use the full box
     )
     return fig
 

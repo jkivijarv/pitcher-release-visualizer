@@ -59,7 +59,17 @@ def load_seasons() -> dict[int, pd.DataFrame]:
 
 # --- Page setup ---------------------------------------------------------------
 st.set_page_config(page_title="Pitcher Release Points", layout="wide")
+# Trim Streamlit's default top/bottom page padding so the chart is front-and-center.
+st.markdown(
+    "<style>.block-container{padding-top:1rem;padding-bottom:1rem;}</style>",
+    unsafe_allow_html=True,
+)
 st.title("League-Wide Pitcher Release Points")
+st.caption(
+    "Each dot is a pitcher's average release point. "
+    "Drag to rotate · pinch or scroll to zoom · tap a dot for details. "
+    "Use the **›** arrow (top-left) for filters on mobile."
+)
 
 seasons = load_seasons()
 available_years = sorted(seasons.keys())
@@ -113,7 +123,7 @@ if df.empty:
     st.stop()
 
 fig = build_figure(df, color_mode=color_mode)
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
 st.caption(
     f"{len(df)} pitchers shown · seasons: {', '.join(map(str, chosen_years))} · "
     f"pitch count {count_low}–{count_high}"
