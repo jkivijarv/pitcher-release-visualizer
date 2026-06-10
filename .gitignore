@@ -1,0 +1,15 @@
+# Python virtual environment (rebuilt from requirements.txt — never commit it)
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Generated local preview
+preview.html
+
+# Streamlit secrets (never commit credentials)
+.streamlit/secrets.toml
+
+# NOTE: data/ is intentionally NOT ignored — the hosted app reads those
+# small aggregated parquet files, so they must be committed.
