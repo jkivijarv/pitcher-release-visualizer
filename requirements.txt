@@ -3,3 +3,4 @@ pandas
 streamlit
 plotly
 pyarrow
+streamlit-js-eval

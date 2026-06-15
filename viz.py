@@ -66,10 +66,11 @@ def _color_map(df: pd.DataFrame, color_mode: str):
     return None
 
 
-def build_figure(df: pd.DataFrame, color_mode: str = "None"):
+def build_figure(df: pd.DataFrame, color_mode: str = "None", height: int | None = None):
     """Return an interactive 3D scatter: one marker per pitcher.
 
     color_mode: one of COLOR_COLUMNS' keys ("None", "Handedness", "Team").
+    height: exact pixel height (to fit the viewport), or None to autosize.
     """
     color_col = COLOR_COLUMNS.get(color_mode)
     fig = px.scatter_3d(
@@ -96,8 +97,8 @@ def build_figure(df: pd.DataFrame, color_mode: str = "None"):
         ),
     )
     fig.update_layout(
-        height=700,                      # tall enough to use comfortably, incl. phones
-        autosize=True,                   # let it flex to the container width
+        height=height,                   # exact pixel height (viewport-fit) or None
+        autosize=True,
         scene=dict(
             xaxis_title=X_TITLE,
             yaxis_title=Y_TITLE,

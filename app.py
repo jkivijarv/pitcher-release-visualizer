@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from streamlit_js_eval import streamlit_js_eval
 
 from viz import COLOR_COLUMNS, build_figure
 
@@ -59,22 +60,31 @@ def load_seasons() -> dict[int, pd.DataFrame]:
 
 # --- Page setup ---------------------------------------------------------------
 st.set_page_config(page_title="Pitcher Release Points", layout="wide")
-# Trim Streamlit's default top/bottom page padding so the chart is front-and-center.
+# Fit the page to the viewport so there's no vertical page-scroll fighting the
+# 3D plot's touch gestures — the plot fills the screen height instead. Title,
+# help, and all filters live in the sidebar to keep the main area plot-only.
 st.markdown(
-    "<style>.block-container{padding-top:1rem;padding-bottom:1rem;}</style>",
+    "<style>[data-testid='stMain']{overflow:hidden;}"
+    ".block-container{padding:0.5rem 1rem 0 1rem;}</style>",
     unsafe_allow_html=True,
 )
-st.title("League-Wide Pitcher Release Points")
-st.caption(
-    "Each dot is a pitcher's average release point. "
-    "Drag to rotate · pinch or scroll to zoom · tap a dot for details. "
-    "Use the **›** arrow (top-left) for filters on mobile."
-)
+
+# Measure the browser's viewport height (called inside the sidebar so its tiny
+# helper element never touches the main plot area). Returns None on the first
+# run, then the pixel value after a quick round-trip; fall back to 700 until then.
+with st.sidebar:
+    viewport_h = streamlit_js_eval(js_expressions="window.innerHeight", key="viewport_h")
+chart_h = int(viewport_h) - 20 if viewport_h else 700
 
 seasons = load_seasons()
 available_years = sorted(seasons.keys())
 
-# --- Sidebar (the toggles) ----------------------------------------------------
+# --- Sidebar: title, help, and all the toggles --------------------------------
+st.sidebar.title("Pitcher Release Points")
+st.sidebar.caption(
+    "Every MLB pitcher's average release point in 3D. "
+    "Drag to rotate · pinch or scroll to zoom · tap a dot for details."
+)
 st.sidebar.header("Filters")
 all_time = st.sidebar.checkbox("All time (every season)")
 if all_time:
@@ -122,9 +132,13 @@ if df.empty:
     st.warning("No pitchers match the current filters.")
     st.stop()
 
-fig = build_figure(df, color_mode=color_mode)
-st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-st.caption(
-    f"{len(df)} pitchers shown · seasons: {', '.join(map(str, chosen_years))} · "
+# Status line goes in the sidebar so the main area stays plot-only.
+st.sidebar.caption(
+    f"**{len(df)}** pitchers · seasons {', '.join(map(str, chosen_years))} · "
     f"pitch count {count_low}–{count_high}"
+)
+
+fig = build_figure(df, color_mode=color_mode, height=chart_h)
+st.plotly_chart(
+    fig, use_container_width=True, config={"displaylogo": False, "responsive": True}
 )
