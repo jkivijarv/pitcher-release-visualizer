@@ -59,12 +59,12 @@ fetch_data.py   -->  data/agg_<year>.parquet   -->  app.py + viz.py (Streamlit +
   current season, commits `data/`, which auto-redeploys the site. Confirmed working.
 - Pushing any commit to `main` redeploys the hosted app.
 
-## Current status / in progress
+## Current status
 
 Shipped and live with seasons **2015–2026**. Polish done (hover, team colors, sidebar-only chrome).
-**In progress (uncommitted):** making the chart fill the browser viewport exactly (no page scroll
-that fights touch gestures on mobile) — using `streamlit-js-eval` to measure `window.innerHeight`
-and set the chart's pixel height. Being verified locally before pushing.
+**Viewport-fit done (shipped 2026-06-14):** the chart fills the browser viewport exactly (no page
+scroll that fights touch gestures on mobile) via `streamlit-js-eval` measuring `window.innerHeight`
+and setting the chart's pixel height (`chart_h = innerHeight - 20`, fallback 700). No open work.
 
 ## Possible v2 (pending brother-in-law feedback)
 
